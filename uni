@@ -165,14 +165,12 @@ local Window = Rayfield:CreateWindow({
      local ShortestDistance = math.huge
      
      for _, Player in pairs(Players:GetPlayers()) do
-         if Player ~= LocalPlayer and Player.Character then
-             local Target = Player.Character:FindFirstChild(TargetPart)
-             if Target then
-                 local Distance = (Target.Position - LocalPlayer.Character.Head.Position).Magnitude
-                 if Distance < ShortestDistance then
-                     ClosestPlayer = Target
-                     ShortestDistance = Distance
-                 end
+         if Player ~= LocalPlayer and Player.Character and Player.Character:FindFirstChild(TargetPart) then
+             local Target = Player.Character[TargetPart]
+             local Distance = (Target.Position - LocalPlayer.Character.Head.Position).Magnitude
+             if Distance < ShortestDistance then
+                 ClosestPlayer = Target
+                 ShortestDistance = Distance
              end
          end
      end
