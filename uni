@@ -506,4 +506,3 @@ Tab3:CreateColorPicker({
 
 -- Run the ESP setup
 setupESP()
-
