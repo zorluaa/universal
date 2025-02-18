@@ -73,92 +73,129 @@ local Window = Rayfield:CreateWindow({
 
 
  local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Mouse = game.Players.LocalPlayer:GetMouse()
-
-local MouseLocked = false
-local PredictionX = 10 -- Default prediction value for X
-local PredictionY = 10 -- Default prediction value for Y
-local PredictionZ = 10 -- Default prediction value for Z
-
--- Mouse Lock Toggle
-local Toggle = Tab1:CreateToggle({
-    Name = "Mouse Lock",
-    CurrentValue = false,
-    Flag = "MouseLockToggle",
-    Callback = function(Value)
-        MouseLocked = Value
-        if MouseLocked then
-            UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-        else
-            UIS.MouseBehavior = Enum.MouseBehavior.Default
-        end
-    end,
-})
-
--- Keybind to toggle mouse lock (default key: Q)
-local Keybind = Tab1:CreateKeybind({
-    Name = "Mouse Lock Keybind",
-    CurrentKeybind = "Q",
-    HoldToInteract = false,
-    Flag = "MouseLockKeybind",
-    Callback = function(KeybindPressed)
-        -- When the key is pressed, toggle the mouse lock state
-        MouseLocked = not MouseLocked
-        if MouseLocked then
-            UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-        else
-            UIS.MouseBehavior = Enum.MouseBehavior.Default
-        end
-        print("Mouse lock toggled:", MouseLocked)
-    end,
-})
-
--- Prediction sliders for X, Y, and Z axes
-local SliderX = Tab1:CreateSlider({
-    Name = "Prediction X",
-    Range = {0, 100},
-    Increment = 1,
-    Suffix = "%",
-    CurrentValue = PredictionX,
-    Flag = "PredictionSliderX",
-    Callback = function(Value)
-        PredictionX = Value
-    end,
-})
-
-local SliderY = Tab1:CreateSlider({
-    Name = "Prediction Y",
-    Range = {0, 100},
-    Increment = 1,
-    Suffix = "%",
-    CurrentValue = PredictionY,
-    Flag = "PredictionSliderY",
-    Callback = function(Value)
-        PredictionY = Value
-    end,
-})
-
-local SliderZ = Tab1:CreateSlider({
-    Name = "Prediction Z",
-    Range = {0, 100},
-    Increment = 1,
-    Suffix = "%",
-    CurrentValue = PredictionZ,
-    Flag = "PredictionSliderZ",
-    Callback = function(Value)
-        PredictionZ = Value
-    end,
-})
-
-RunService.RenderStepped:Connect(function()
-    if MouseLocked then
-        local predictedX = Mouse.Hit.Position.X + (PredictionX / 100)
-        local predictedY = Mouse.Hit.Position.Y + (PredictionY / 100)
-        local predictedZ = Mouse.Hit.Position.Z + (PredictionZ / 100)
-        print("Predicted Position:", predictedX, predictedY, predictedZ)
-    end
-end)
+ local RunService = game:GetService("RunService")
+ local Players = game:GetService("Players")
+ local LocalPlayer = Players.LocalPlayer
+ local Mouse = LocalPlayer:GetMouse()
+ 
+ local MouseLocked = false
+ local TargetPart = "Head" -- Default target part
+ local PredictionX, PredictionY, PredictionZ = 10, 10, 10
+ 
+ -- Toggle Mouse Lock
+ local Toggle = Tab1:CreateToggle({
+     Name = "Mouse Lock",
+     CurrentValue = false,
+     Flag = "MouseLockToggle",
+     Callback = function(Value)
+         MouseLocked = Value
+         if not MouseLocked then
+             UIS.MouseBehavior = Enum.MouseBehavior.Default
+         end
+     end,
+ })
+ 
+ -- Dropdown to select target body part
+ local Dropdown = Tab1:CreateDropdown({
+     Name = "Lock-On Target",
+     Options = {"Head", "Torso", "Legs"},
+     CurrentOption = {"Head"},
+     MultipleOptions = false,
+     Flag = "LockOnDropdown",
+     Callback = function(Option)
+         TargetPart = Option[1] -- Update target part
+     end,
+ })
+ 
+ -- Keybind to toggle mouse lock
+ local Keybind = Tab1:CreateKeybind({
+     Name = "Mouse Lock Keybind",
+     CurrentKeybind = "Q",
+     HoldToInteract = false,
+     Flag = "MouseLockKeybind",
+     Callback = function()
+         MouseLocked = not MouseLocked
+         if not MouseLocked then
+             UIS.MouseBehavior = Enum.MouseBehavior.Default
+         end
+         print("Mouse lock toggled:", MouseLocked)
+     end,
+ })
+ 
+ -- Prediction sliders
+ local SliderX = Tab1:CreateSlider({
+     Name = "Prediction X",
+     Range = {0, 100},
+     Increment = 1,
+     Suffix = "%",
+     CurrentValue = PredictionX,
+     Flag = "PredictionSliderX",
+     Callback = function(Value)
+         PredictionX = Value
+     end,
+ })
+ 
+ local SliderY = Tab1:CreateSlider({
+     Name = "Prediction Y",
+     Range = {0, 100},
+     Increment = 1,
+     Suffix = "%",
+     CurrentValue = PredictionY,
+     Flag = "PredictionSliderY",
+     Callback = function(Value)
+         PredictionY = Value
+     end,
+ })
+ 
+ local SliderZ = Tab1:CreateSlider({
+     Name = "Prediction Z",
+     Range = {0, 100},
+     Increment = 1,
+     Suffix = "%",
+     CurrentValue = PredictionZ,
+     Flag = "PredictionSliderZ",
+     Callback = function(Value)
+         PredictionZ = Value
+     end,
+ })
+ 
+ -- Function to get the closest player
+ local function GetClosestPlayer()
+     local ClosestPlayer = nil
+     local ShortestDistance = math.huge
+     
+     for _, Player in pairs(Players:GetPlayers()) do
+         if Player ~= LocalPlayer and Player.Character then
+             local Target = Player.Character:FindFirstChild(TargetPart)
+             if Target then
+                 local Distance = (Target.Position - LocalPlayer.Character.Head.Position).Magnitude
+                 if Distance < ShortestDistance then
+                     ClosestPlayer = Target
+                     ShortestDistance = Distance
+                 end
+             end
+         end
+     end
+     
+     return ClosestPlayer
+ end
+ 
+ -- Update aim position
+ RunService.RenderStepped:Connect(function()
+     if MouseLocked then
+         local Target = GetClosestPlayer()
+         if Target then
+             local predictedX = Target.Position.X + (PredictionX / 100)
+             local predictedY = Target.Position.Y + (PredictionY / 100)
+             local predictedZ = Target.Position.Z + (PredictionZ / 100)
+             Mouse.Hit = CFrame.new(predictedX, predictedY, predictedZ)
+             UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+         else
+             UIS.MouseBehavior = Enum.MouseBehavior.Default
+         end
+     end
+ end)
+ 
 
 
 
