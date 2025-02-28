@@ -6,8 +6,9 @@ local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local localPlayer = players.LocalPlayer
 
-local isEnabled = settings.HBEEnabled -- Stores current state
+local isHBEEnabled = settings.HBEEnabled -- HBE state
 
+-- Function to modify hitboxes
 local function modifyHitboxes(state)
     for _, player in ipairs(players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -28,20 +29,77 @@ local function modifyHitboxes(state)
     end
 end
 
--- Toggle function for keybind
+-- Toggle function for HBE keybind
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == settings.HBEToggleKey then
-        isEnabled = not isEnabled
-        settings.HBEEnabled = isEnabled
-        print("Hitbox Expander:", isEnabled and "Enabled" or "Disabled")
-        modifyHitboxes(isEnabled) -- Apply changes immediately
+        isHBEEnabled = not isHBEEnabled
+        settings.HBEEnabled = isHBEEnabled
+        print("Hitbox Expander:", isHBEEnabled and "Enabled" or "Disabled")
+        modifyHitboxes(isHBEEnabled) -- Apply changes immediately
     end
 end)
 
--- Continuously apply modifications if enabled
+-- Continuously apply modifications if HBE is enabled
 runService.RenderStepped:Connect(function()
-    if isEnabled then
+    if isHBEEnabled then
         modifyHitboxes(true)
+    end
+end)
+
+-- Triggerbot Code
+local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+local remoteShoot = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Shoot")
+local isTriggerbotEnabled = settings.TriggerbotEnabled -- Triggerbot state
+local lastShotTime = 0
+
+-- Function to check if the mouse is over a player's character
+local function isMouseOverPlayer()
+    local target = mouse.Target
+    if target and target.Parent then
+        local character = target.Parent
+        if players:GetPlayerFromCharacter(character) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to shoot when the mouse is over a player
+local function shoot()
+    if isTriggerbotEnabled then
+        local currentTime = tick()
+        if currentTime - lastShotTime >= settings.TriggerbotDelay then
+            -- Fire the remote (Replace with your shooting logic)
+            local target = mouse.Target
+            if target and target.Parent then
+                local character = target.Parent
+                local player = players:GetPlayerFromCharacter(character)
+                if player and player ~= players.LocalPlayer then
+                    -- Collect arguments for the shoot function
+                    local args = { mouse.Hit.p, character:WaitForChild("HumanoidRootPart").Position }
+                    remoteShoot:FireServer(unpack(args))
+                    lastShotTime = currentTime
+                    print("Shot fired at:", player.Name)
+                end
+            end
+        end
+    end
+end
+
+-- Toggle function for Triggerbot keybind
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == settings.TriggerbotToggleKey then
+        isTriggerbotEnabled = not isTriggerbotEnabled
+        settings.TriggerbotEnabled = isTriggerbotEnabled
+        print("Triggerbot:", isTriggerbotEnabled and "Enabled" or "Disabled")
+    end
+end)
+
+-- Continuously check if the mouse is over a player and shoot
+runService.RenderStepped:Connect(function()
+    if isTriggerbotEnabled and isMouseOverPlayer() then
+        shoot()
     end
 end)
