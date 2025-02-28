@@ -70,15 +70,20 @@ local function shoot()
     if isTriggerbotEnabled then
         local currentTime = tick()
         if currentTime - lastShotTime >= settings.TriggerbotDelay then
-            -- Fire the remote (Replace with your shooting logic)
+            -- Fire the remote with the arguments
             local target = mouse.Target
             if target and target.Parent then
                 local character = target.Parent
                 local player = players:GetPlayerFromCharacter(character)
                 if player and player ~= players.LocalPlayer then
-                    -- Collect arguments for the shoot function
-                    local args = { mouse.Hit.p, character:WaitForChild("HumanoidRootPart").Position }
-                    remoteShoot:FireServer(unpack(args))
+                    -- Collect the shooting arguments
+                    local args = {
+                        [1] = mouse.Hit.p, -- Mouse position
+                        [2] = character:WaitForChild("HumanoidRootPart").Position, -- Target's root position
+                        [3] = workspace:WaitForChild("Prototype"):WaitForChild("Environment"):WaitForChild("Part"), -- A part in the environment
+                        [4] = Vector3.new(90.67869567871094, 61, 57.19411849975586) -- Optional position
+                    }
+                    remoteShoot:FireServer(unpack(args))  -- Fire the shoot remote
                     lastShotTime = currentTime
                     print("Shot fired at:", player.Name)
                 end
@@ -103,3 +108,4 @@ runService.RenderStepped:Connect(function()
         shoot()
     end
 end)
+
