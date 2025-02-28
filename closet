@@ -1,26 +1,39 @@
 local settings = getgenv().settings
-if not settings or not settings.HBEEnabled then return end
+if not settings then return end
 
 local players = game:GetService("Players")
 local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
 local localPlayer = players.LocalPlayer
+
+local isEnabled = settings.HBEEnabled -- Stores current state
 
 local function modifyHitboxes()
     for _, player in ipairs(players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local rootPart = player.Character.HumanoidRootPart
-            rootPart.Size = Vector3.new(settings.HBESize, settings.HBESize, settings.HBESize) -- Adjust size
-            rootPart.Transparency = settings.HBETransparency -- Adjust transparency
-            rootPart.Material = Enum.Material.Neon -- Set material to Neon for visibility
+            rootPart.Size = isEnabled and Vector3.new(settings.HBESize, settings.HBESize, settings.HBESize) or Vector3.new(2, 2, 1)
+            rootPart.Transparency = isEnabled and settings.HBETransparency or 0
+            rootPart.Material = isEnabled and Enum.Material.Neon or Enum.Material.Plastic
             rootPart.CanCollide = true
-            rootPart.Color = settings.HBEColor -- Apply color from settings
+            rootPart.Color = isEnabled and settings.HBEColor or Color3.fromRGB(255, 255, 255)
         end
     end
 end
 
+-- Toggle function for keybind
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == settings.HBEToggleKey then
+        isEnabled = not isEnabled
+        settings.HBEEnabled = isEnabled
+        print("Hitbox Expander:", isEnabled and "Enabled" or "Disabled")
+    end
+end)
+
 -- Continuously apply modifications if enabled
 runService.RenderStepped:Connect(function()
-    if settings.HBEEnabled then
+    if isEnabled then
         modifyHitboxes()
     end
 end)
