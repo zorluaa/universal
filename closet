@@ -48,10 +48,20 @@ runService.RenderStepped:Connect(function()
 end)
 
 -- Triggerbot Code
+local settings = getgenv().settings
+if not settings then return end
+
+local players = game:GetService("Players")
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
 local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+local localPlayer = players.LocalPlayer
 local remoteShoot = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Shoot")
-local isTriggerbotEnabled = settings.TriggerbotEnabled -- Triggerbot state
+
+local enabled = settings.TriggerbotEnabled -- Triggerbot state
+local toggle = settings.TriggerbotToggleKey -- Key to toggle triggerbot on/off
 local lastShotTime = 0
+local delay = settings.TriggerbotDelay
 
 -- Function to check if the mouse is over a player's character
 local function isMouseOverPlayer()
@@ -67,15 +77,15 @@ end
 
 -- Function to shoot when the mouse is over a player
 local function shoot()
-    if isTriggerbotEnabled then
+    if enabled then
         local currentTime = tick()
-        if currentTime - lastShotTime >= settings.TriggerbotDelay then
+        if currentTime - lastShotTime >= delay then
             -- Fire the remote with the arguments
             local target = mouse.Target
             if target and target.Parent then
                 local character = target.Parent
                 local player = players:GetPlayerFromCharacter(character)
-                if player and player ~= players.LocalPlayer then
+                if player and player ~= localPlayer then
                     -- Collect the shooting arguments
                     local args = {
                         [1] = mouse.Hit.p, -- Mouse position
@@ -85,7 +95,6 @@ local function shoot()
                     }
                     remoteShoot:FireServer(unpack(args))  -- Fire the shoot remote
                     lastShotTime = currentTime
-                    print("Shot fired at:", player.Name)
                 end
             end
         end
@@ -95,16 +104,16 @@ end
 -- Toggle function for Triggerbot keybind
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == settings.TriggerbotToggleKey then
-        isTriggerbotEnabled = not isTriggerbotEnabled
-        settings.TriggerbotEnabled = isTriggerbotEnabled
-        print("Triggerbot:", isTriggerbotEnabled and "Enabled" or "Disabled")
+    if input.KeyCode == toggle then
+        enabled = not enabled
+        -- Print the state of triggerbot
+        print("Triggerbot:", enabled and "Enabled" or "Disabled")
     end
 end)
 
 -- Continuously check if the mouse is over a player and shoot
 runService.RenderStepped:Connect(function()
-    if isTriggerbotEnabled and isMouseOverPlayer() then
+    if enabled and isMouseOverPlayer() then
         shoot()
     end
 end)
