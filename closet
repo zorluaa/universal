@@ -8,15 +8,22 @@ local localPlayer = players.LocalPlayer
 
 local isEnabled = settings.HBEEnabled -- Stores current state
 
-local function modifyHitboxes()
+local function modifyHitboxes(state)
     for _, player in ipairs(players:GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local rootPart = player.Character.HumanoidRootPart
-            rootPart.Size = isEnabled and Vector3.new(settings.HBESize, settings.HBESize, settings.HBESize) or Vector3.new(2, 2, 1)
-            rootPart.Transparency = isEnabled and settings.HBETransparency or 0
-            rootPart.Material = isEnabled and Enum.Material.Neon or Enum.Material.Plastic
-            rootPart.CanCollide = true
-            rootPart.Color = isEnabled and settings.HBEColor or Color3.fromRGB(255, 255, 255)
+            if state then
+                rootPart.Size = Vector3.new(settings.HBESize, settings.HBESize, settings.HBESize)
+                rootPart.Transparency = settings.HBETransparency
+                rootPart.Material = Enum.Material.Neon
+                rootPart.Color = settings.HBEColor
+            else
+                -- Reset to default hitbox size when disabled
+                rootPart.Size = Vector3.new(2, 2, 1)
+                rootPart.Transparency = 0
+                rootPart.Material = Enum.Material.Plastic
+                rootPart.Color = Color3.fromRGB(255, 255, 255)
+            end
         end
     end
 end
@@ -28,12 +35,13 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
         isEnabled = not isEnabled
         settings.HBEEnabled = isEnabled
         print("Hitbox Expander:", isEnabled and "Enabled" or "Disabled")
+        modifyHitboxes(isEnabled) -- Apply changes immediately
     end
 end)
 
 -- Continuously apply modifications if enabled
 runService.RenderStepped:Connect(function()
     if isEnabled then
-        modifyHitboxes()
+        modifyHitboxes(true)
     end
 end)
